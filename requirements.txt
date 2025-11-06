@@ -7,8 +7,8 @@ pytz
 python-dateutil
 
 # Torch stack (CPU by default; see Dockerfile for CUDA alternative)
-torch>=2.3
-pytorch-lightning>=2.4
+torch<2.5,>=2.0
+lightning>=2.0,<3.0
 pytorch-forecasting>=1.0.0
 
 # Viz & reports

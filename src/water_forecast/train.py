@@ -1,8 +1,8 @@
 from __future__ import annotations
 import os
 import pandas as pd
-import pytorch_lightning as pl
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
+from lightning.pytorch import Trainer
+from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint, LearningRateMonitor
 
 from .config import load_config
 from .utils import ensure_dir, save_json
@@ -70,7 +70,7 @@ def main(cfg_path: str = "configs/default.yaml"):
     )
     lrmon = LearningRateMonitor(logging_interval="epoch")
 
-    trainer = pl.Trainer(
+    trainer = Trainer(
         max_epochs=cfg.max_epochs,
         accelerator="auto",
         devices="auto",

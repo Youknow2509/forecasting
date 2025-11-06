@@ -2,3 +2,4 @@ venv/
 .venv/
 data/
 **/*.log
+lightning_logs/

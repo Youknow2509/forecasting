@@ -22,8 +22,6 @@ def make_tft(training_dataset,
         reduce_on_plateau_patience=4
     )
 
-    # Ignore các nn.Module attributes khi checkpointing
-    model.save_hyperparameters(ignore=["loss", "logging_metrics"])
-
     return model
+
 

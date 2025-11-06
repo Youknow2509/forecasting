@@ -43,3 +43,181 @@ python -m src.water_forecast.make_splits --cfg configs/default.yaml --out_dir da
 # 3) Huấn luyện như cũ (train.py vẫn có thể tự split nội bộ)
 python -m src.water_forecast.train --cfg configs/default.yaml
 ```
+
+## Mô hình Temporal Fusion Transformer (TFT)
+
+### Tổng quan
+Dự án sử dụng mô hình **Temporal Fusion Transformer (TFT)** - một kiến trúc deep learning tiên tiến được thiết kế đặc biệt cho bài toán dự báo chuỗi thời gian đa biến. TFT kết hợp các cơ chế attention với khả năng xử lý các biến động thời gian phức tạp.
+
+### Kiến trúc mô hình
+
+#### 1. **Các thành phần chính**
+
+- **Variable Selection Networks (VSN)**: Tự động chọn lọc các biến đầu vào quan trọng nhất
+- **Gated Residual Networks (GRN)**: Xử lý thông tin với khả năng học phi tuyến tính
+- **Multi-head Attention**: Học được mối quan hệ phụ thuộc thời gian dài hạn
+- **Quantile Regression**: Dự đoán nhiều quantiles để ước lượng độ không chắc chắn
+
+#### 2. **Cấu hình mô hình**
+
+```python
+# Các tham số chính của TFT
+hidden_size = 160              # Kích thước hidden layer
+attention_heads = 4            # Số lượng attention heads
+dropout = 0.1                  # Tỷ lệ dropout để tránh overfitting
+learning_rate = 1e-3           # Tốc độ học
+quantiles = (0.1, 0.5, 0.9)   # Các quantile để dự đoán
+```
+
+#### 3. **Các lớp xử lý**
+
+##### a. **Input Layer**
+- Nhận đầu vào là chuỗi thời gian với nhiều biến (multivariate time series)
+- Xử lý các loại biến:
+  - **Static covariates**: Các biến không đổi theo thời gian (vd: ID trạm đo)
+  - **Time-varying known**: Các biến biết trước (vd: thời gian trong ngày, tháng)
+  - **Time-varying unknown**: Các biến chỉ biết trong quá khứ (vd: lượng mưa thực tế)
+
+##### b. **Variable Selection Network**
+- Tự động đánh trọng số cho từng biến đầu vào
+- Giúp mô hình tập trung vào các biến quan trọng nhất
+- Cải thiện khả năng giải thích của mô hình
+
+##### c. **LSTM Encoder-Decoder**
+- **Encoder**: Xử lý dữ liệu quá khứ (historical data)
+- **Decoder**: Xử lý các biến known trong tương lai
+- Kết hợp thông tin từ cả quá khứ và tương lai đã biết
+
+##### d. **Multi-head Attention Layer**
+- Học được mối quan hệ phụ thuộc giữa các bước thời gian
+- Cho phép mô hình "chú ý" đến các thời điểm quan trọng trong quá khứ
+- Sử dụng 4 attention heads để học nhiều pattern khác nhau
+
+##### e. **Gated Residual Network (GRN)**
+- Xử lý thông tin phi tuyến tính
+- Có cơ chế gating để kiểm soát luồng thông tin
+- Kết nối residual giúp huấn luyện mô hình sâu hơn
+
+##### f. **Output Layer - Quantile Regression**
+- Dự đoán 3 quantiles: 10%, 50% (median), 90%
+- **Q10 (0.1)**: Giới hạn dưới - kịch bản lạc quan
+- **Q50 (0.5)**: Dự đoán trung bình - kịch bản có khả năng nhất
+- **Q90 (0.9)**: Giới hạn trên - kịch bản bi quan
+- Cho phép đánh giá độ không chắc chắn của dự đoán
+
+### Cách thức dự đoán
+
+#### 1. **Quá trình dự đoán**
+
+```python
+# Bước 1: Chuẩn bị dữ liệu đầu vào
+# - Context window: N bước thời gian trong quá khứ
+# - Prediction horizon: M bước thời gian cần dự đoán
+
+# Bước 2: Variable Selection
+# Mô hình đánh giá tầm quan trọng của từng biến
+
+# Bước 3: LSTM Encoding
+# Mã hóa thông tin từ chuỗi quá khứ
+
+# Bước 4: Temporal Fusion
+# Kết hợp thông tin quá khứ với các biến known tương lai
+
+# Bước 5: Multi-head Attention
+# Tập trung vào các thời điểm quan trọng
+
+# Bước 6: Quantile Prediction
+# Dự đoán 3 giá trị cho mỗi bước thời gian
+```
+
+#### 2. **Ví dụ sử dụng**
+
+```python
+from water_forecast.tft_model import make_tft
+
+# Tạo mô hình từ dataset
+model = make_tft(
+    training_dataset,
+    hidden_size=160,
+    attention_heads=4,
+    dropout=0.1,
+    learning_rate=1e-3,
+    quantiles=(0.1, 0.5, 0.9)
+)
+
+# Huấn luyện
+trainer.fit(model, train_loader, val_loader)
+
+# Dự đoán
+predictions = model.predict(test_data)
+
+# Kết quả: dictionary chứa các quantiles
+# predictions["prediction"]: shape (batch_size, prediction_length, 3)
+# [:, :, 0]: quantile 0.1 (giới hạn dưới)
+# [:, :, 1]: quantile 0.5 (dự đoán trung bình)
+# [:, :, 2]: quantile 0.9 (giới hạn trên)
+```
+
+### Loss Function - Quantile Loss
+
+Mô hình sử dụng **Quantile Loss** để tối ưu hóa:
+
+```python
+QuantileLoss = Σ max[q(y - ŷ), (q-1)(y - ŷ)]
+```
+
+Trong đó:
+- `y`: Giá trị thực tế
+- `ŷ`: Giá trị dự đoán
+- `q`: Quantile (0.1, 0.5, 0.9)
+
+**Ưu điểm:**
+- Cho phép dự đoán khoảng tin cậy, không chỉ giá trị điểm
+- Phù hợp với các tình huống cần đánh giá rủi ro
+- Xử lý tốt với dữ liệu có outliers
+
+### Ưu điểm của TFT
+
+1. **Khả năng giải thích cao**
+   - Variable importance: Biết biến nào quan trọng
+   - Attention weights: Hiểu mô hình tập trung vào thời điểm nào
+
+2. **Xử lý dữ liệu phức tạp**
+   - Nhiều biến đầu vào (multivariate)
+   - Các biến với tính chất khác nhau (static, time-varying)
+   - Missing data handling
+
+3. **Dự đoán khoảng tin cậy**
+   - Quantile prediction cho phép đánh giá độ không chắc chắn
+   - Hữu ích cho ra quyết định trong điều kiện bất định
+
+4. **Hiệu suất cao**
+   - Kết hợp LSTM và Attention hiệu quả
+   - Học được cả phụ thuộc ngắn hạn và dài hạn
+
+### Hyperparameters chính
+
+| Tham số | Giá trị mặc định | Mô tả |
+|---------|------------------|-------|
+| `hidden_size` | 160 | Kích thước của các hidden layers |
+| `attention_heads` | 4 | Số lượng attention heads |
+| `dropout` | 0.1 | Tỷ lệ dropout (0-1) |
+| `learning_rate` | 1e-3 | Tốc độ học ban đầu |
+| `quantiles` | (0.1, 0.5, 0.9) | Các quantile để dự đoán |
+| `log_interval` | 50 | Tần suất log metrics |
+| `reduce_on_plateau_patience` | 4 | Số epochs chờ trước khi giảm learning rate |
+
+### Monitoring & Callbacks
+
+Mô hình sử dụng các callbacks của PyTorch Lightning:
+
+- **EarlyStopping**: Dừng training khi validation loss không cải thiện
+- **ModelCheckpoint**: Lưu best model theo validation loss
+- **LearningRateMonitor**: Theo dõi learning rate schedule
+- **ReduceLROnPlateau**: Tự động giảm learning rate khi loss plateau
+
+### Tài liệu tham khảo
+
+- [PyTorch Forecasting Documentation](https://pytorch-forecasting.readthedocs.io/)
+- [Temporal Fusion Transformers Paper](https://arxiv.org/abs/1912.09363)
+- [Lightning Documentation](https://lightning.ai/docs/pytorch/stable/)
