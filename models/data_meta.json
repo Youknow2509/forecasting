@@ -1,0 +1,36 @@
+{
+  "enc_len": 168,
+  "dec_len": 336,
+  "frequency": "1H",
+  "timezone": "Asia/Bangkok",
+  "quantiles": [
+    0.1,
+    0.5,
+    0.9
+  ],
+  "features": {
+    "continuous_obs": [
+      "muc_thuong_luu",
+      "luu_luong_den",
+      "tong_luong_xa",
+      "xa_tran",
+      "xa_nha_may",
+      "so_cua_xa_sau",
+      "so_cua_xa_mat",
+      "was_imputed"
+    ],
+    "known_future": [
+      "hour_sin",
+      "hour_cos",
+      "dow_sin",
+      "dow_cos",
+      "doy_sin",
+      "doy_cos",
+      "is_weekend"
+    ],
+    "static_real": [
+      "muc_dang_binh_thuong",
+      "muc_chet"
+    ]
+  }
+}

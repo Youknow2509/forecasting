@@ -1,0 +1,68 @@
+global:
+  timezone: "Asia/Ho_Chi_Minh"
+  freq: "H"
+  horizon_hours: 336
+  enc_len_hours: 168
+  default_year_for_partial_ts: 2024
+
+sources:
+  calendar:
+    enabled: true
+    features:
+      - hour_of_day
+      - day_of_week
+      - day_of_year
+      - is_weekend
+      - is_holiday
+    country_holidays: "VN"
+
+  rainfall_forecast:
+    enabled: true
+    path_training_hindcast: "data/external/rain_hindcast.csv"   # optional
+    path_inference_forecast: "data/external/rain_forecast.csv"  # optional
+
+  inflow_forecast:
+    enabled: false
+    path_training_hindcast: ""
+    path_inference_forecast: ""
+
+  operation_plan:
+    enabled: false
+    path_training: ""
+    path_inference: ""
+
+simulate:
+  rainfall:
+    method: "persistence"  # persistence | climatology
+    climatology_window_days: 30
+
+  inflow:
+    enabled: true
+    params:
+      kq: 0.6
+      ks: 0.95
+      c_r2q: 0.8
+      qmin: 0.0
+    fit_params_from_history: false
+
+operation_scenarios:
+  enabled: true
+  constraints:
+    qout_min: 0.0
+    qout_max: 2000.0
+    ramp_rate: 300.0
+  targets:
+    target_level: 586.5
+    tolerance: 0.5
+
+mappings:
+  id_col: "ten_ho"
+  time_col: "timestamp"
+  target_col: "muc_nuoc_thuong_luu"
+  static_reals: ["muc_nuoc_dang_binh_thuong","muc_nuoc_chet"]
+  observed_reals: ["luu_luong_den_ho","tong_luong_xa","tong_luong_xa_qua_dap_tran","tong_luong_xa_qua_nha_may"]
+  observed_categoricals: ["so_cua_xa_sau","so_cua_xa_mat"]
+
+outputs:
+  training_known_future: "data/processed/known_future_training.parquet"
+  inference_known_future: "data/processed/known_future_inference.parquet"

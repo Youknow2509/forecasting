@@ -1,0 +1,28 @@
+# Core
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+pyyaml>=6.0.1
+pytz
+python-dateutil
+
+# Torch stack (CPU by default; see Dockerfile for CUDA alternative)
+torch>=2.3
+pytorch-lightning>=2.4
+pytorch-forecasting>=1.0.0
+
+# Viz & reports
+matplotlib>=3.9
+seaborn>=0.13
+
+# API & monitoring
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pydantic>=2.8
+prometheus-client>=0.20
+
+
+# Logging & tracking (optional)
+mlflow>=2.16
+
+pyarrow>=15

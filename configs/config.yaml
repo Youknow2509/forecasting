@@ -1,0 +1,76 @@
+project:
+  seed: 2024
+  artifacts_dir: artifacts
+  outputs_dir: outputs
+  use_mlflow: false
+  experiment_name: tft-water-forecast
+
+data:
+  input_path: data/processed/processed.parquet
+  raw_timezone: "Asia/Bangkok"
+  freq: "H"             # "H" hoặc "3H"
+  id_col: "series_id"
+  time_col: "timestamp"
+  target_col: "muc_thuong_luu"
+
+crawl:
+  url_root: "https://hochuathuydien.evn.com.vn/PageHoChuaThuyDienEmbedEVN.aspx"
+  output_dir: "data/crawl"
+  timeout: 800 # milliseconds
+  vm: "84"
+  lv: "23"
+  hc: "4-47"
+  time_step: 120 # minutes
+  time_start: "24/01/2025 04:00" # "01/01/2020 00:00" 10/01/2020 03:00
+  time_end: "31/10/2025 23:59" # "31/12/2022 23:59"
+
+features:
+  static_reals: ["muc_dang_binh_thuong", "muc_chet"]
+  static_categoricals: []   # ví dụ: ["type"]
+  known_future_reals: ["mua_du_bao", "dong_chay_du_bao", "plan_xa"]
+  known_future_categoricals: []
+  observed_reals: ["luu_luong_den", "tong_luong_xa", "xa_tran", "xa_nha_may"]
+  observed_categoricals: ["so_cua_xa_sau", "so_cua_xa_mat"]
+
+  # time features (cyclical)
+  time_features: ["hour_of_day", "day_of_week", "day_of_year"]
+
+  # lag features
+  lags:
+    target: [1, 3, 6, 24, 48, 168]
+  rolling:
+    mean: [3, 12, 24, 168]
+    std: [12, 24, 168]
+
+split:
+  # có thể set theo tỉ lệ hoặc theo mốc thời gian
+  method: "ratio"      # ratio | by_date
+  train_ratio: 0.7
+  val_ratio: 0.15
+  test_ratio: 0.15
+  # hoặc:
+  # train_end: "2023-06-30T23:00:00+07:00"
+  # val_end: "2023-12-31T23:00:00+07:00"
+
+tft:
+  enc_len: 168         # 7 ngày history
+  dec_len: 336         # horizon 2 tuần (hourly)
+  hidden_size: 160
+  attention_heads: 4
+  dropout: 0.1
+  learning_rate: 1.0e-3
+  weight_decay: 1.0e-4
+  batch_size: 64
+  max_epochs: 150
+  early_stopping_patience: 10
+  gradient_clip_val: 0.8
+  quantiles: [0.1, 0.5, 0.9]
+  target_normalizer: "GroupNormalizer"  # hoặc "StandardScaler"
+
+eval:
+  make_plots: true
+  n_samples_plot: 3
+  metrics:
+    - "mae"
+    - "rmse"
+    - "coverage_10_90"
