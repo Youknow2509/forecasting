@@ -2,7 +2,10 @@ from __future__ import annotations
 import os
 import numpy as np, pandas as pd, matplotlib.pyplot as plt
 import torch
-from pytorch_lightning import seed_everything
+try:
+    from lightning.pytorch import seed_everything
+except ImportError:
+    from pytorch_lightning import seed_everything
 from pytorch_forecasting import TimeSeriesDataSet
 from pytorch_forecasting.models import TemporalFusionTransformer
 

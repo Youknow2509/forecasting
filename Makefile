@@ -1,5 +1,5 @@
 .All: help
-.PHONY: splits ingest crawl help 
+.PHONY: splits ingest crawl help test test-model test-unit
 .PHONY: venv install
 .PHONY: train eval serve
 
@@ -18,6 +18,9 @@ help:
 	@echo "Training and evaluation:"
 	@echo " \ttrain       - Train the model"
 	@echo " \teval        - Evaluate the model"
+	@echo " \ttest-model  - Comprehensive model testing with metrics and plots"
+	@echo " \ttest-unit   - Run unit tests"
+	@echo " \ttest        - Run all tests"
 	@echo ""
 	@echo " \thelp       - Show this help message"
 splits:
@@ -31,6 +34,14 @@ train:
 
 eval:
 	python -m src.evaluate --cfg configs/default.yaml --ckpt models/tft-best.ckpt
+
+test-model:
+	python -m src.water_forecast.test_model --cfg configs/default.yaml
+
+test-unit:
+	pytest tests/ -v
+
+test: test-unit test-model
 
 venv:
 	python3 -m venv .venv
