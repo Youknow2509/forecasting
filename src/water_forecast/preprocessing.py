@@ -53,3 +53,37 @@ def apply_scalers(df: pd.DataFrame, scalers: Dict[str, StandardScaler]) -> pd.Da
         cols = [c for c in KNOWN_FUTURE if c in out.columns]
         out[cols] = scalers["known"].transform(out[cols].astype(float))
     return out
+
+
+def inverse_transform_target(values, scalers: Dict[str, StandardScaler], target_col: str = "muc_thuong_luu"):
+    """
+    Chuyển giá trị dự đoán từ dạng chuẩn hóa về thang đo gốc.
+    
+    Args:
+        values: numpy array hoặc pandas Series - giá trị đã chuẩn hóa
+        scalers: dict của scalers
+        target_col: tên cột target cần inverse transform
+    
+    Returns:
+        numpy array - giá trị đã inverse transform về thang đo gốc
+    """
+    import numpy as np
+    
+    if "obs" not in scalers:
+        return values
+    
+    # Lấy scaler và tìm index của target column
+    obs_scaler = scalers["obs"]
+    obs_cols = [c for c in CONTINUOUS_OBS if c in obs_scaler.feature_names_in_]
+    
+    if target_col not in obs_cols:
+        return values
+    
+    target_idx = obs_cols.index(target_col)
+    
+    # Lấy mean và scale của target column
+    mean = obs_scaler.mean_[target_idx]
+    scale = obs_scaler.scale_[target_idx]
+    
+    # Inverse transform: X_original = X_scaled * scale + mean
+    return values * scale + mean

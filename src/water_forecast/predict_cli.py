@@ -26,6 +26,15 @@ def main():
     scalers = fit_scalers(tr)
     full = pd.concat([apply_scalers(x, scalers) for x in [tr, va, te]])
 
+    # Sort and add time_idx before building datasets
+    full = full.sort_values(["site_id", "timestamp"]).copy()
+    full["time_idx"] = full.groupby("site_id").cumcount()
+    
+    # Fill NaN values in lag/rolling features
+    lag_roll_cols = [c for c in full.columns if c.startswith("muc_thuong_luu_lag_") or c.startswith("muc_thuong_luu_rolling_")]
+    for col in lag_roll_cols:
+        full[col] = full.groupby("site_id")[col].ffill().bfill()
+
     training, _ = build_timeseries_datasets(full, cfg.enc_len, cfg.dec_len)
     model = TemporalFusionTransformer.load_from_checkpoint(args.ckpt)
 

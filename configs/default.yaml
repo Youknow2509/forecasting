@@ -40,7 +40,7 @@ roll_stats: ["mean", "std"]
 
 # Training
 batch_size: 64
-max_epochs: 150
+max_epochs: 5
 hidden_size: 160
 attention_heads: 4
 dropout: 0.1
@@ -58,5 +58,5 @@ paths:
   data_csv: "data/sample.csv"
   artifacts_dir: "artifacts"
   models_dir: "models"
-  best_ckpt: "models/best.ckpt"
-  metadata_json: "models/metadata.json"
+  best_ckpt: "models/tft-best.ckpt"
+  metadata_json: "models/data_meta.json"

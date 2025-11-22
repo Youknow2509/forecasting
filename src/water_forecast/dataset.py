@@ -15,11 +15,14 @@ def build_timeseries_datasets(
 
     - Điền NaN trong các cột lag/rolling.
     - Sắp xếp theo site và timestamp.
-    - Thêm time_idx.
+    - Thêm time_idx nếu chưa có.
     """
-    # 1) Sắp xếp và tạo time_idx
-    df = df.sort_values(["site_id", "timestamp"]).copy()
-    df["time_idx"] = df.groupby("site_id").cumcount()
+    # 1) Sắp xếp và tạo time_idx nếu chưa có
+    if "time_idx" not in df.columns:
+        df = df.sort_values(["site_id", "timestamp"]).copy()
+        df["time_idx"] = df.groupby("site_id").cumcount()
+    else:
+        df = df.copy()
 
     # 2) Xác định các feature groups
     static_categoricals = ["site_id"]

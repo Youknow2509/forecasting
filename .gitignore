@@ -6,3 +6,5 @@ venv/
 data/
 **/*.log
 lightning_logs/
+
+models/
